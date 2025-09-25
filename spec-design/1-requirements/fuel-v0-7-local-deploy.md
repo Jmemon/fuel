@@ -8,7 +8,18 @@ The application deploys using three Docker containers:
 
 **Prerequisites:**
 - Create `./database/migrations/` directory in project root
-- Add SQL migration files (e.g., `001_initial_schema.sql`, `002_add_indexes.sql`) to auto-initialize database schema
+- Add SQL migration files to auto-initialize database schema:
+  - `001_initial_schema.sql`: All CREATE TABLE statements from fuel-v0-3-database.md
+  - `002_add_indexes.sql`: All CREATE INDEX statements from fuel-v0-3-database.md
+
+**Migration File Structure:**
+```
+database/migrations/
+├── 001_initial_schema.sql    # Tables in dependency order
+└── 002_add_indexes.sql       # Performance indexes
+```
+
+Files are executed alphabetically by PostgreSQL's docker-entrypoint-initdb.d during container initialization.
 
 #### docker-compose.yml
 ```yaml
@@ -120,3 +131,82 @@ For production deployments, consider implementing:
 - **Backup monitoring and alerting**
 
 **Recommended backup frequency**: Daily for active development, hourly for production use
+
+## File Structure Recommendations
+
+### .gitignore (root)
+```gitignore
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+build/
+*/dist/
+*/build/
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+```
+
+### backend/.dockerignore
+```dockerignore
+node_modules/
+npm-debug.log
+.git/
+.gitignore
+README.md
+.env
+.env.local
+coverage/
+.vscode/
+.idea/
+```
+
+### frontend/.dockerignore
+```dockerignore
+node_modules/
+npm-debug.log
+.git/
+.gitignore
+README.md
+.env
+.env.local
+coverage/
+.vscode/
+.idea/
+dist/
+build/
+```

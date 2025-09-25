@@ -7,6 +7,18 @@
 **Target User:** Individual developers who want to track and review their daily coding activities across multiple projects.
 **Timeline:** Version 0.5 (Basic MVP without automated webhooks)
 
+## V0.5 Implementation Scope
+
+**IMPORTANT**: This version only implements manual activity log entries. While the database schema supports multiple activity types (git_commit, claude_code, git_checkout, git_hook_install), the frontend and backend will only handle `type: "manual"` entries.
+
+### Not Implemented in V0.5:
+- Git commit capture and display
+- Claude Code conversation parsing
+- Git checkout tracking
+- Git hook installation logging
+
+These features are planned for future versions and the database schema is designed to support them.
+
 ## Core Functionality
 
 ### 1. Activity Log Management
@@ -124,8 +136,22 @@ Retrieve activity logs with optional filtering.
       "reviewed": false,
       "created_at": "2024-01-15T10:30:00Z",
       "reviewed_at": null,
-      "content": {
-        "text": "Manual activity entry text"
+      "details": {
+        "content": "Manual activity entry text"
+      }
+    },
+    {
+      "id": "uuid",
+      "type": "git_commit",
+      "reviewed": false,
+      "created_at": "2024-01-15T09:15:00Z",
+      "reviewed_at": null,
+      "details": {
+        "commit_hash": "abc123",
+        "message": "Add user authentication",
+        "author_name": "John Doe",
+        "repo_name": "my-project",
+        "files_changed": ["src/auth.ts", "src/middleware.ts"]
       }
     }
   ],
@@ -136,14 +162,16 @@ Retrieve activity logs with optional filtering.
 }
 ```
 
+**Note**: The `details` field contains type-specific data. For v0.5, only `type: "manual"` entries will be created, but the API structure supports future activity types.
+
 #### POST /activity-logs
 Create a new manual activity log entry.
 
 **Request Body:**
 ```json
 {
-  "content": {
-    "text": "Manual activity entry text"
+  "details": {
+    "content": "Manual activity entry text"
   }
 }
 ```
@@ -157,8 +185,8 @@ Create a new manual activity log entry.
     "reviewed": false,
     "created_at": "2024-01-15T10:30:00Z",
     "reviewed_at": null,
-    "content": {
-      "text": "Manual activity entry text"
+    "details": {
+      "content": "Manual activity entry text"
     }
   }
 }
@@ -173,8 +201,8 @@ Update an existing manual activity log entry.
 **Request Body:**
 ```json
 {
-  "content": {
-    "text": "Updated manual activity entry text"
+  "details": {
+    "content": "Updated manual activity entry text"
   },
   "reviewed": true
 }
@@ -189,8 +217,8 @@ Update an existing manual activity log entry.
     "reviewed": true,
     "created_at": "2024-01-15T10:30:00Z",
     "reviewed_at": "2024-01-15T11:00:00Z",
-    "content": {
-      "text": "Updated manual activity entry text"
+    "details": {
+      "content": "Updated manual activity entry text"
     }
   }
 }
