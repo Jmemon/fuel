@@ -1,6 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import activityLogsRouter from './routes/activityLogs'
+import frontendLogsRouter from './routes/frontendLogs'
 import { errorHandler } from './middleware/errorHandler'
 import { requestLoggingMiddleware, serviceLogger } from './utils/logger'
 
@@ -29,6 +30,7 @@ export class Server {
 
     private setupRoutes(): void {
         this.app.use('/api/v1/activity-logs', activityLogsRouter)
+        this.app.use('/api/v1/frontend-logs', frontendLogsRouter)
 
         // Health check endpoint
         this.app.get('/health', (req, res) => {

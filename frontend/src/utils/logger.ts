@@ -21,11 +21,18 @@ export class FrontendLogger {
     private sessionId: string
     private logLevel: LogLevel
     private isProduction: boolean
+    private backendLogUrl: string
+    private logBuffer: any[] = []
+    private flushInterval: number = 5000 // Send logs every 5 seconds
 
     private constructor() {
         this.sessionId = this.generateSessionId()
         this.logLevel = (import.meta.env.VITE_LOG_LEVEL as LogLevel) || 'debug'
         this.isProduction = import.meta.env.PROD
+        this.backendLogUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/v1/frontend-logs`
+
+        // Start periodic log flushing to backend
+        this.startLogFlushing()
 
         // Initialize logging session
         this.info('Frontend logging initialized', {
@@ -77,7 +84,7 @@ export class FrontendLogger {
             ...context
         }
 
-        // Use appropriate console method with styling
+        // Always log to console (unchanged behavior)
         const styles = this.getLogStyles(level)
 
         switch (level) {
@@ -97,6 +104,9 @@ export class FrontendLogger {
 
         // Store in session storage for debugging (last 100 logs)
         this.storeLog(logData)
+
+        // Add to buffer for backend forwarding
+        this.addToBackendBuffer(logData)
     }
 
     private getLogStyles(level: LogLevel): string {
@@ -129,6 +139,76 @@ export class FrontendLogger {
             sessionStorage.setItem('fuel_debug_logs', JSON.stringify(storedLogs))
         } catch (e) {
             console.warn('Failed to store log in session storage:', e)
+        }
+    }
+
+    private startLogFlushing(): void {
+        // Flush logs to backend periodically
+        setInterval(() => {
+            this.flushLogsToBackend()
+        }, this.flushInterval)
+
+        // Also flush on page unload
+        window.addEventListener('beforeunload', () => {
+            this.flushLogsToBackend(true) // Synchronous flush on unload
+        })
+    }
+
+    private addToBackendBuffer(logData: any): void {
+        // Only send certain log levels to backend to avoid spam
+        if (['error', 'warn', 'info'].includes(logData.level)) {
+            this.logBuffer.push({
+                level: logData.level,
+                message: logData.message,
+                timestamp: logData.timestamp,
+                sessionId: logData.sessionId,
+                context: {
+                    component: logData.component,
+                    action: logData.action,
+                    data: logData.data,
+                    url: logData.url,
+                    userAgent: navigator.userAgent
+                }
+            })
+
+            // If buffer gets too large, flush immediately
+            if (this.logBuffer.length >= 50) {
+                this.flushLogsToBackend()
+            }
+        }
+    }
+
+    private async flushLogsToBackend(synchronous = false): Promise<void> {
+        if (this.logBuffer.length === 0) return
+
+        const logsToSend = [...this.logBuffer]
+        this.logBuffer = [] // Clear buffer immediately
+
+        try {
+            const options: RequestInit = {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(logsToSend)
+            }
+
+            if (synchronous) {
+                // Use navigator.sendBeacon for synchronous sending on page unload
+                navigator.sendBeacon(
+                    this.backendLogUrl,
+                    new Blob([JSON.stringify(logsToSend)], { type: 'application/json' })
+                )
+            } else {
+                // Use fetch for normal async sending
+                const response = await fetch(this.backendLogUrl, options)
+                if (!response.ok) {
+                    console.warn('Failed to send logs to backend:', response.statusText)
+                }
+            }
+        } catch (error) {
+            console.warn('Error sending logs to backend:', error)
+            // On error, we could re-add logs to buffer, but for now just log the error
         }
     }
 

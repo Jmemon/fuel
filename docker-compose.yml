@@ -10,7 +10,7 @@ services:
       - postgres_logs:/var/log/postgresql
       - ./database/migrations:/docker-entrypoint-initdb.d
       - ./database/postgresql.conf:/etc/postgresql/postgresql.conf
-    command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
+    command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf", "-c", "log_statement=all", "-c", "log_duration=on", "-c", "logging_collector=off"]
     networks:
       - fuel_backend_network
     healthcheck:
