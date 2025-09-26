@@ -18,6 +18,9 @@ COPY src/ ./src/
 # Build TypeScript
 RUN npm run build
 
+# Create logs directory
+RUN mkdir -p /app/logs && chmod 755 /app/logs
+
 # Expose port
 EXPOSE 3001
 

@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import activityLogsRouter from './routes/activityLogs'
 import { errorHandler } from './middleware/errorHandler'
+import { requestLoggingMiddleware, serviceLogger } from './utils/logger'
 
 export class Server {
     private app: express.Application
@@ -14,11 +15,16 @@ export class Server {
     }
 
     private setupMiddleware(): void {
+        // Request logging middleware (first to capture all requests)
+        this.app.use(requestLoggingMiddleware)
+
         this.app.use(express.json({ limit: '10mb' }))
         this.app.use(cors({
             origin: process.env.FRONTEND_URL || 'http://localhost:3000',
             credentials: true
         }))
+
+        serviceLogger.startup('Middleware setup completed')
     }
 
     private setupRoutes(): void {
@@ -26,7 +32,9 @@ export class Server {
 
         // Health check endpoint
         this.app.get('/health', (req, res) => {
-            res.json({ status: 'ok', timestamp: new Date().toISOString() })
+            const healthData = { status: 'ok', timestamp: new Date().toISOString() }
+            serviceLogger.healthCheck('Backend API', 'healthy', healthData)
+            res.json(healthData)
         })
     }
 
@@ -36,6 +44,7 @@ export class Server {
 
     public start(port: number): void {
         this.app.listen(port, () => {
+            serviceLogger.startup('Fuel Backend Server', port)
             console.log(`Server running on port ${port}`)
         })
     }
